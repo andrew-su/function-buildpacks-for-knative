@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: event-sample
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  labels:
+    networking.knative.dev/visibility: cluster-local # avoid public url for service
+  name: myservice
+  namespace: event-sample
+spec:
+  template:
+    spec:
+      containers:
+      - image: gcr.io/lfabian-sandbox/sample-java
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: myproducer
+  namespace: event-sample
+spec:
+  template:
+    spec:
+      containers:
+      - env:
+        - name: K_SINK
+          value: value should be updated by the sinkbinding resource
+        image: gcr.io/lfabian-sandbox/producer-java
+---
+apiVersion: sources.knative.dev/v1
+kind: SinkBinding
+metadata:
+  name: mysource
+  namespace: event-sample
+spec:
+  sink: # references the ksvc myservice to send events to it
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: myservice
+      namespace: event-sample
+    uri: /func
+  subject: # references ksvc myproducer to update it's env K_SINK value
+    apiVersion: serving.knative.dev/v1
+    kind: Service
+    name: myproducer
+    namespace: event-sample
