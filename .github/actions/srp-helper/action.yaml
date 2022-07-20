@@ -14,18 +14,18 @@ inputs:
     required: false
 runs:
   using: "composite"
-  steps:
-  - name: Install SRP
-    uses: ./.github/actions/srp-helper/install
-  - name: Initialize SRP
-    uses: ./.github/actions/srp-helper/init
-    with:
-      client-id: ${{ inputs.client_id }}
-      client-secret: ${{ inputs.client_secret }}
-      domain: ${{ inputs.domain }}
-  - name: Collect SRP
-    uses: ./.github/actions/srp-helper/collect
-    with:
-      git-repos: .
+  steps: []
+  # - name: Install SRP
+  #   uses: ./.github/actions/srp-helper/install
+  # - name: Initialize SRP
+  #   uses: ./.github/actions/srp-helper/init
+  #   with:
+  #     client-id: ${{ inputs.client_id }}
+  #     client-secret: ${{ inputs.client_secret }}
+  #     domain: ${{ inputs.domain }}
+  # - name: Collect SRP
+  #   uses: ./.github/actions/srp-helper/collect
+  #   with:
+  #     git-repos: .
   # - name: Submit SRP
   #   uses: ./.github/actions/srp-helper/submit
