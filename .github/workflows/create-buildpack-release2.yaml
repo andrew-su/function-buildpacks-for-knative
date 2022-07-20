@@ -89,10 +89,6 @@ jobs:
           echo "::set-output name=offline_image_file_content::$(head ${offline_image_file})"
           echo "::set-output name=offline_image_sha_file::${offline_image_file}.sha256"
           echo "::set-output name=offline_image_sha_file_content::$(cat ${offline_image_file}.sha256)"
-      - name: VMware SRP Report
-        uses: ${{ github.repository }}/.github/workflows/vmware-srp-caller.yaml@main
-        with:
-          domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -115,4 +111,23 @@ jobs:
             ${{ steps.artifacts.outputs.offline_image_file }}
             ${{ steps.artifacts.outputs.offline_image_sha_file }}
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
+          - name: Check SRP Creds
+            uses: ./.github/actions/srp-helper/check-srp-creds
+            with:
+              client-id: ${{ secrets.SRP_CLIENT_ID }}
+              client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+          - name: Install SRP
+            uses: ./.github/actions/srp-helper/install
+          - name: Initialize SRP
+            uses: ./.github/actions/srp-helper/init
+            with:
+              domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
+              client-id: ${{ secrets.SRP_CLIENT_ID }}
+              client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+          - name: Collect SRP
+            uses: ./.github/actions/srp-helper/collect
+            with:
+              git-repos: .
+          # - name: Submit SRP
+          #   uses: ./.github/actions/srp-helper/submit
