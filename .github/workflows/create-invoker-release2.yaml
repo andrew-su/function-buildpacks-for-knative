@@ -101,7 +101,7 @@ jobs:
       - name: Initialize SRP
         uses: ./.github/actions/srp-helper/init
         with:
-          domain: ${{ github.event.inputs.buildpack }}-function-invoker
+          domain: ${{ github.event.inputs.invoker }}-function-invoker
           client-id: ${{ secrets.SRP_CLIENT_ID }}
           client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
       - name: Collect SRP
