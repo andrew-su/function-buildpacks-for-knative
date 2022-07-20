@@ -1,0 +1,92 @@
+# Copyright 2021-2022 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: Create Invoker Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      invoker:
+        type: choice
+        description: Select an invoker
+        options:
+        - python
+        - java
+      release-type:
+        type: choice
+        description: The type of release
+        options:
+        - patch
+        - minor
+        - major
+      pre-release-label:
+        type: string
+        description: Pre-release label
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - id: version
+        uses: ./.github/actions/semver-bump
+        with:
+          path: ./invokers/${{ github.event.inputs.invoker }}/VERSION
+          release-type: ${{ github.event.inputs.release-type }}
+          pre-release: ${{ github.event.inputs.pre-release-label }}
+      - name: Bump version
+        run: |
+          printf "${{ steps.version.outputs.version }}" > ./invokers/${{ github.event.inputs.invoker }}/VERSION
+      - name: Run Tests
+        run: |
+          make invokers.${{ github.event.inputs.invoker }}.tests
+      - name: Build
+        run: |
+          make invokers.${{ github.event.inputs.invoker }}
+      - name: Commit Version
+        run: |
+          git add ./invokers/${{ github.event.inputs.invoker }}/VERSION
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -m 'Update ${{ github.event.inputs.invoker }} invoker version to ${{ steps.version.outputs.version }}'
+          git push
+      - name: Create Tag
+        id: tag
+        run: |
+          tag=${{ github.event.inputs.invoker }}-invoker/v${{ steps.version.outputs.version }}
+          git tag $tag
+          git push --tags
+          echo "::set-output name=tag::$tag"
+      - id: artifacts
+        run: |
+          files=./out/invokers/${{ github.event.inputs.invoker }}/*.sha256
+
+          echo 'invoker_files<<EOF' >> $GITHUB_ENV
+          ls ${files} | rev | cut -d. -f 2- | rev >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+          echo 'invoker_sha_files<<EOF' >> $GITHUB_ENV
+          ls ${files} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+          echo 'invoker_sha_content<<EOF' >> $GITHUB_ENV
+          cat ${files} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.event.inputs.invoker }}-invoker v${{ steps.version.outputs.version }}
+          body: |
+            # File Checksums
+            ```
+            ${{ env.invoker_sha_content }}
+            ```
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            ${{ env.invoker_files }}
+            ${{ env.invoker_sha_files }}
+          token: ${{ secrets.GITHUB_TOKEN }}
