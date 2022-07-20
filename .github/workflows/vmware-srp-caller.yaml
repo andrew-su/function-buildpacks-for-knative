@@ -25,5 +25,5 @@ jobs:
       uses: ./.github/actions/srp-helper/collect
       with:
         git-repos: .
-    - name: Submit SRP
-      uses: ./.github/actions/srp-helper/submit
+    # - name: Submit SRP
+    #   uses: ./.github/actions/srp-helper/submit
