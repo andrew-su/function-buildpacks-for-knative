@@ -112,22 +112,22 @@ jobs:
             ${{ steps.artifacts.outputs.offline_image_sha_file }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-          - name: Check SRP Creds
-            uses: ./.github/actions/srp-helper/check-srp-creds
-            with:
-              client-id: ${{ secrets.SRP_CLIENT_ID }}
-              client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
-          - name: Install SRP
-            uses: ./.github/actions/srp-helper/install
-          - name: Initialize SRP
-            uses: ./.github/actions/srp-helper/init
-            with:
-              domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
-              client-id: ${{ secrets.SRP_CLIENT_ID }}
-              client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
-          - name: Collect SRP
-            uses: ./.github/actions/srp-helper/collect
-            with:
-              git-repos: .
-          # - name: Submit SRP
-          #   uses: ./.github/actions/srp-helper/submit
+      - name: Check SRP Creds
+        uses: ./.github/actions/srp-helper/check-srp-creds
+        with:
+          client-id: ${{ secrets.SRP_CLIENT_ID }}
+          client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+      - name: Install SRP
+        uses: ./.github/actions/srp-helper/install
+      - name: Initialize SRP
+        uses: ./.github/actions/srp-helper/init
+        with:
+          domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
+          client-id: ${{ secrets.SRP_CLIENT_ID }}
+          client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+      - name: Collect SRP
+        uses: ./.github/actions/srp-helper/collect
+        with:
+          git-repos: .
+      # - name: Submit SRP
+      #   uses: ./.github/actions/srp-helper/submit
