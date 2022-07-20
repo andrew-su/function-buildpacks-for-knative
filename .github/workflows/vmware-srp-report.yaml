@@ -1,0 +1,83 @@
+name: Vmware SRP Report
+
+on:
+  workflow_call:
+    inputs:
+      domain:
+        description: |
+          Optionally provide the domain, such as 'tanzu-buildpacks' or 'tanzu-java-buildpacks'.
+          Do not provide quotes.
+        required: false
+    secrets:
+      client-id:
+        description: 'Client ID associated with your CSP org'
+        required: true
+      client-secret:
+        description: 'Client Secret associated with your CSP org'
+        required: true
+
+jobs:
+  srp:
+    name: VMware SRP Report
+    runs-on:
+      - ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install SRP
+        run: |
+          set -euo pipefail
+
+          echo "Installing SRP CLI"
+
+          mkdir -p "$HOME/bin"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+          curl \
+            --show-error \
+            --silent \
+            --location \
+            "https://srp-cli.s3.amazonaws.com/srp-cli-latest.tgz" \
+          | tar -C "$HOME/bin" -xz srp
+
+          chmod 755 "$HOME/bin/srp"
+      - name: Initialize SRP
+        env:
+          CLIENT_ID: ${{ secrets.SRP_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.SRP_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          trap 'catch' ERR
+          catch() {
+            echo "An error has occurred removing SRP data"
+            rm -rf ./srp_data
+          }
+
+          if [ -n "${DOMAIN}" ]; then
+            DOMAIN="domain='${DOMAIN}',"
+          fi
+
+          GITHUB_FQDN=$(echo "${GITHUB_SERVER_URL}" | sed -e "s/^https:\/\///")
+          SRP_UID="uid.obj.build.github(${DOMAIN}instance='${GITHUB_FQDN}',namespace='${GITHUB_REPOSITORY}',ref='${GITHUB_REF}',action='${GITHUB_ACTION}',build_id='${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}')"
+          echo "SRP component UID generated: $SRP_UID"
+
+          mkdir -p srp_data/
+
+          echo "$SRP_UID" > srp_data/srp_uid
+          echo "SRP component UID stored in: srp_data/srp_uid"
+
+          echo "${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}" > srp_data/build_number
+          echo "Build number stored in:      srp_data/build_number"
+
+          echo srp config auth --client-id "${{ CLIENT_ID }}" --client-secret "${{ CLIENT_SECRET }}"
+          # cp "$HOME/.srp/config.yml" srp_data/config.yml
+          # echo "SRP CLI config stored in:    srp_data/config.yml"
+          # echo "SRP CLI version:             $(srp --version)"
+
+          echo "::set-output name=srp-data::$PWD/srp_data"
+      # - name: Collect SRP
+      #   uses: pivotal-cf/srp-helper-action/collect@v1
+      #   with:
+      #     git-repos: .
+      # - name: Submit SRP
+      #   uses: pivotal-cf/srp-helper-action/submit@v1
