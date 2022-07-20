@@ -23,9 +23,9 @@ echo "SRP component UID stored in: srp_data/srp_uid"
 echo "${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}" > srp_data/build_number
 echo "Build number stored in:      srp_data/build_number"
 
-echo srp config auth --client-id "$CLIENT_ID" --client-secret "$CLIENT_SECRET"
-# cp "$HOME/.srp/config.yml" srp_data/config.yml
-# echo "SRP CLI config stored in:    srp_data/config.yml"
-# echo "SRP CLI version:             $(srp --version)"
+srp config auth --client-id "$CLIENT_ID" --client-secret "$CLIENT_SECRET"
+cp "$HOME/.srp/config.yml" srp_data/config.yml
+echo "SRP CLI config stored in:    srp_data/config.yml"
+echo "SRP CLI version:             $(srp --version)"
 
-# echo "::set-output name=srp-data::$PWD/srp_data"
+echo "::set-output name=srp-data::$PWD/srp_data"

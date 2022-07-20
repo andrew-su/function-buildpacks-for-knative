@@ -10,8 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/vmware-srp
+    - name: Check SRP Creds
+      uses: ./.github/actions/srp-helper/check-srp-creds
       with:
-        client-id: ${{ secrets.SRP_CLIENT_ID }}
-        client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
-        git-repos: .
+        client-id: ${{ secrets.JAVA_SRP_CLIENT_ID }}
+        client-secret: ${{ secrets.JAVA_SRP_CLIENT_SECRET }}
+    - name: Install SRP
+      uses: ./.github/actions/srp-helper/install
+    - name: Initialize SRP
+      uses: ./.github/actions/srp-helper/init
+      with:
+        client-id: ${{ secrets.JAVA_SRP_CLIENT_ID }}
+        client-secret: ${{ secrets.JAVA_SRP_CLIENT_SECRET }}
+    # - name: Collect SRP
+    #   uses: ./.github/actions/srp-helper/collect
+    #   with:
+    #     git-repos: .
+    # - name: Submit SRP
+    #   uses: ./.github/actions/srp-helper/submit
