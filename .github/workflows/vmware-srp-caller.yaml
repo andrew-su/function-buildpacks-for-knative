@@ -1,0 +1,16 @@
+# Copyright 2021-2022 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: vmware srp caller
+on:
+  workflow_dispatch: {}
+
+jobs:
+  src-call:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/vmware-srp
+      with:
+        client-id: ${{ secrets.SRP_CLIENT_ID }}
+        client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
