@@ -90,7 +90,7 @@ jobs:
           echo "::set-output name=offline_image_sha_file::${offline_image_file}.sha256"
           echo "::set-output name=offline_image_sha_file_content::$(cat ${offline_image_file}.sha256)"
       - name: VMware SRP Report
-        uses: ${GITHUB_REPOSITORY}/.github/workflows/vmware-srp-caller.yaml
+        uses: ${{ github.repository }}/.github/workflows/vmware-srp-caller.yaml
         with:
           domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
       - name: Create Release
