@@ -9,6 +9,7 @@ jobs:
   src-call:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
     - name: Check SRP Creds
       uses: ./.github/actions/srp-helper/check-srp-creds
       with:
