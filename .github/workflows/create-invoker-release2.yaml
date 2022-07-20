@@ -77,7 +77,7 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
 
       - name: VMware SRP Report
-        uses: ${{ github.repository }}/.github/workflows/vmware-srp-caller.yaml
+        uses: andrew-su/function-buildpacks-for-knative/.github/workflows/vmware-srp-caller.yaml
         with:
           domain: ${{ github.event.inputs.buildpack }}-function-invoker
 
