@@ -1,7 +1,7 @@
 # Copyright 2021-2022 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 
-name: Create Invoker Release
+name: Create Invoker Release 2
 
 on:
   workflow_dispatch:
@@ -75,6 +75,11 @@ jobs:
           echo 'invoker_sha_content<<EOF' >> $GITHUB_ENV
           cat ${files} >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
+
+      - name: VMware SRP Report
+        uses: ./.github/workflows/vmware-srp-caller.yaml
+        with:
+          domain: ${{ github.event.inputs.buildpack }}-function-invoker
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
