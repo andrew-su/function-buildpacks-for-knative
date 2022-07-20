@@ -13,15 +13,15 @@ jobs:
     - name: Check SRP Creds
       uses: ./.github/actions/srp-helper/check-srp-creds
       with:
-        client-id: ${{ secrets.JAVA_SRP_CLIENT_ID }}
-        client-secret: ${{ secrets.JAVA_SRP_CLIENT_SECRET }}
+        client-id: ${{ secrets.SRP_CLIENT_ID }}
+        client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
     - name: Install SRP
       uses: ./.github/actions/srp-helper/install
     - name: Initialize SRP
       uses: ./.github/actions/srp-helper/init
       with:
-        client-id: ${{ secrets.JAVA_SRP_CLIENT_ID }}
-        client-secret: ${{ secrets.JAVA_SRP_CLIENT_SECRET }}
+        client-id: ${{ secrets.SRP_CLIENT_ID }}
+        client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
     # - name: Collect SRP
     #   uses: ./.github/actions/srp-helper/collect
     #   with:
