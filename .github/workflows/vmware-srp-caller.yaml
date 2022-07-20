@@ -3,7 +3,13 @@
 
 name: vmware srp caller
 on:
-  workflow_dispatch: {}
+  workflow_call:
+    inputs:
+      domain:
+        description: |
+          Optionally provide the domain, such as 'tanzu-buildpacks' or 'tanzu-java-buildpacks'.
+          Do not provide quotes.
+        required: true
 
 jobs:
   src-call:

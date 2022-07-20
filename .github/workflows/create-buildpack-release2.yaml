@@ -1,7 +1,7 @@
 # Copyright 2021-2022 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 
-name: Create Buildpack Release
+name: Create Buildpack Release2
 
 env:
   REGISTRY: ghcr.io
@@ -89,6 +89,10 @@ jobs:
           echo "::set-output name=offline_image_file_content::$(head ${offline_image_file})"
           echo "::set-output name=offline_image_sha_file::${offline_image_file}.sha256"
           echo "::set-output name=offline_image_sha_file_content::$(cat ${offline_image_file}.sha256)"
+      - name: VMware SRP Report
+        uses: ./.github/workflows/vmware-srp-caller.yaml
+        with:
+          domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -111,3 +115,4 @@ jobs:
             ${{ steps.artifacts.outputs.offline_image_file }}
             ${{ steps.artifacts.outputs.offline_image_sha_file }}
           token: ${{ secrets.GITHUB_TOKEN }}
+      
