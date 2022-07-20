@@ -1,0 +1,133 @@
+# Copyright 2021-2022 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: Create Buildpack Release
+
+env:
+  REGISTRY: ghcr.io
+  CONTAINER_PATH: ${{ github.repository }}
+  DEPENDENCY_BASE_URL: https://github.com/${{ github.repository }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildpack:
+        type: choice
+        description: Select a buildpack
+        options:
+        - python
+        - java
+      release-type:
+        type: choice
+        description: The type of release
+        options:
+        - patch
+        - minor
+        - major
+      pre-release-label:
+        type: string
+        description: Pre-release label
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.17.0'
+      - name: Log in to the Container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: version
+        uses: ./.github/actions/semver-bump
+        with:
+          path: ./buildpacks/${{ github.event.inputs.buildpack }}/VERSION
+          release-type: ${{ github.event.inputs.release-type }}
+          pre-release: ${{ github.event.inputs.pre-release-label }}
+      - name: Bump Version
+        run: |
+          printf "${{ steps.version.outputs.version }}" > ./buildpacks/${{ github.event.inputs.buildpack }}/VERSION
+      - name: Run Tests
+        run: |
+          make buildpacks.${{ github.event.inputs.buildpack }}.tests
+      - name: Publish Container
+        run: |
+          make base_url=${{ env.DEPENDENCY_BASE_URL }} registry.location=other REGISTRY=${{ env.REGISTRY }}/${{ env.CONTAINER_PATH }} buildpacks.${{ github.event.inputs.buildpack }}.images.publish
+      - name: Commit Version
+        run: |
+          git add ./buildpacks/${{ github.event.inputs.buildpack }}/VERSION
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -m 'Update ${{ github.event.inputs.buildpack }} buildpack version to ${{ steps.version.outputs.version }}'
+          git push
+      - name: Create Tag
+        id: tag
+        run: |
+          tag=${{ github.event.inputs.buildpack }}-buildpack/v${{ steps.version.outputs.version }}
+          git tag $tag
+          git push --tags
+          echo "::set-output name=tag::$tag"
+      - id: artifacts
+        run: |
+          online_image_file=./out/buildpacks/${{ github.event.inputs.buildpack }}/${{ steps.version.outputs.version }}/${{ github.event.inputs.buildpack }}-buildpack-${{ steps.version.outputs.version }}.image
+          offline_image_file=./out/buildpacks/${{ github.event.inputs.buildpack }}/${{ steps.version.outputs.version }}/${{ github.event.inputs.buildpack }}-buildpack-with-deps-${{ steps.version.outputs.version }}.image
+
+          echo "::set-output name=online_image_file::${online_image_file}"
+          echo "::set-output name=online_image_file_content::$(head ${online_image_file})"
+          echo "::set-output name=online_image_sha_file::${online_image_file}.sha256"
+          echo "::set-output name=online_image_sha_file_content::$(cat ${online_image_file}.sha256)"
+
+          echo "::set-output name=offline_image_file::${offline_image_file}"
+          echo "::set-output name=offline_image_file_content::$(head ${offline_image_file})"
+          echo "::set-output name=offline_image_sha_file::${offline_image_file}.sha256"
+          echo "::set-output name=offline_image_sha_file_content::$(cat ${offline_image_file}.sha256)"
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.event.inputs.buildpack }}-buildpack v${{ steps.version.outputs.version }}
+          body: |
+            The buildpack images can be found at:
+            ```
+            ${{ steps.artifacts.outputs.online_image_file_content }}
+            ${{ steps.artifacts.outputs.offline_image_file_content }}
+            ```
+            # File Checksums
+            ```
+            ${{ steps.artifacts.outputs.online_image_sha_file_content }}
+            ${{ steps.artifacts.outputs.offline_image_sha_file_content }}
+            ```
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            ${{ steps.artifacts.outputs.online_image_file }}
+            ${{ steps.artifacts.outputs.online_image_sha_file }}
+            ${{ steps.artifacts.outputs.offline_image_file }}
+            ${{ steps.artifacts.outputs.offline_image_sha_file }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check SRP Creds
+        uses: ./.github/actions/srp-helper/check-srp-creds
+        with:
+          client-id: ${{ secrets.SRP_CLIENT_ID }}
+          client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+      - name: Install SRP
+        uses: ./.github/actions/srp-helper/install
+      - name: Initialize SRP
+        uses: ./.github/actions/srp-helper/init
+        with:
+          domain: ${{ github.event.inputs.buildpack }}-function-buildpack-for-vmware-tanzu
+          client-id: ${{ secrets.SRP_CLIENT_ID }}
+          client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+      - name: Collect SRP
+        uses: ./.github/actions/srp-helper/collect
+        with:
+          git-repos: .
+      # - name: Submit SRP
+      #   uses: ./.github/actions/srp-helper/submit
