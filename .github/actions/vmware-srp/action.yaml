@@ -1,17 +1,37 @@
 name: Vmware SRP Report
 description: 'Generate and upload SRP report to VMware'
 inputs:
-  domain:
-    description: |
-      Optionally provide the domain, such as 'tanzu-buildpacks' or 'tanzu-java-buildpacks'.
-      Do not provide quotes.
-    required: false
-secrets:
   client-id:
     description: 'Client ID associated with your CSP org'
     required: true
   client-secret:
     description: 'Client Secret associated with your CSP org'
+    required: true
+  domain:
+    description: |
+      Optionally provide the domain, such as 'tanzu-buildpacks' or 'tanzu-java-buildpacks'.
+      Do not provide quotes.
+    required: false
+  git-repos:
+    description: 'List of repos to process. Space separated.'
+    required: true
+  build-type:
+    description: 'Name of the built type to be stored in source provenance'
+    default: release
+    required: true
+  scm-type:
+    description: 'SCM type of the processed repos'
+    default: git
+    required: true
+  source-provenance-path:
+    description: 'Location of the source provenance file'
+    required: false
+  network-provenance-path:
+    description: 'Location of the network provenance file'
+    required: false
+  srp-url:
+    description: 'SRP service URL, if set to empty it will use the default internal URL. Defaults to the external service URL.'
+    default: 'https://apigw.vmware.com/v1/s1/api/helix-beta'
     required: true
 outputs: # output will be available to future steps
   previous-version:
@@ -21,61 +41,27 @@ outputs: # output will be available to future steps
 runs:
   using: 'composite'
   steps:
-  - name: Install SRP
-    run: |
-      set -euo pipefail
-
-      echo "Installing SRP CLI"
-
-      mkdir -p "$HOME/bin"
-      echo "$HOME/bin" >> "$GITHUB_PATH"
-
-      curl \
-        --show-error \
-        --silent \
-        --location \
-        "https://srp-cli.s3.amazonaws.com/srp-cli-latest.tgz" \
-      | tar -C "$HOME/bin" -xz srp
-
-      chmod 755 "$HOME/bin/srp"
-  - name: Initialize SRP
-    env:
-      CLIENT_ID: ${{ secrets.SRP_CLIENT_ID }}
-      CLIENT_SECRET: ${{ secrets.SRP_CLIENT_SECRET }}
-    run: |
-      set -euo pipefail
-
-      trap 'catch' ERR
-      catch() {
-        echo "An error has occurred removing SRP data"
-        rm -rf ./srp_data
-      }
-
-      if [ -n "${DOMAIN}" ]; then
-        DOMAIN="domain='${DOMAIN}',"
-      fi
-
-      GITHUB_FQDN=$(echo "${GITHUB_SERVER_URL}" | sed -e "s/^https:\/\///")
-      SRP_UID="uid.obj.build.github(${DOMAIN}instance='${GITHUB_FQDN}',namespace='${GITHUB_REPOSITORY}',ref='${GITHUB_REF}',action='${GITHUB_ACTION}',build_id='${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}')"
-      echo "SRP component UID generated: $SRP_UID"
-
-      mkdir -p srp_data/
-
-      echo "$SRP_UID" > srp_data/srp_uid
-      echo "SRP component UID stored in: srp_data/srp_uid"
-
-      echo "${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}" > srp_data/build_number
-      echo "Build number stored in:      srp_data/build_number"
-
-      echo srp config auth --client-id "${{ CLIENT_ID }}" --client-secret "${{ CLIENT_SECRET }}"
-      # cp "$HOME/.srp/config.yml" srp_data/config.yml
-      # echo "SRP CLI config stored in:    srp_data/config.yml"
-      # echo "SRP CLI version:             $(srp --version)"
-
-      echo "::set-output name=srp-data::$PWD/srp_data"
-  # - name: Collect SRP
-  #   uses: pivotal-cf/srp-helper-action/collect@v1
-  #   with:
-  #     git-repos: .
-  # - name: Submit SRP
-  #   uses: pivotal-cf/srp-helper-action/submit@v1
+    - id: install
+      run: ${{ github.action_path }}/install.sh
+      shell: bash
+    - id: init
+      run: ${{ github.action_path }}/init.sh
+      env:
+        CLIENT_ID: ${{ inputs.client-id }}
+        CLIENT_SECRET: ${{ inputs.client-secret }}
+        DOMAIN: ${{ inputs.domain }}
+      shell: bash
+    # - id: collect
+    #   env:
+    #     GIT_REPOS: ${{ inputs.git-repos }}
+    #     BUILD_TYPE: ${{ inputs.build-type }}
+    #     SCM_TYPE: ${{ inputs.scm-type }}
+    #   run: ${{ github.action_path }}/collect.sh
+    #   shell: bash
+    # - id: submit
+    #   run: ${{ github.action_path }}/submit.sh
+    #   env:
+    #     SOURCE_PROVENANCE_PATH: ${{ inputs.source-provenance-path }}
+    #     NETWORK_PROVENANCE_PATH: ${{ inputs.network-provenance-path }}
+    #     SRP_URL: ${{ inputs.srp-url }}
+    #   shell: bash

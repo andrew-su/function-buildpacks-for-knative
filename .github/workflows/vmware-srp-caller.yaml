@@ -14,3 +14,4 @@ jobs:
       with:
         client-id: ${{ secrets.SRP_CLIENT_ID }}
         client-secret: ${{ secrets.SRP_CLIENT_SECRET }}
+        git-repos: .
